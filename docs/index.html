@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>saga-kit · SAP Commerce backend tooling</title>
+<meta name="description" content="Eventing-correctness library for SAP BTP/Kyma commerce meshes — idempotency, ordering, transactional outbox and DLQ as declarative middleware." />
+<style>
+  :root{--bg:#0b1020;--panel:#141b34;--ink:#e8ecf8;--muted:#9aa6c7;--accent:#5b8cff;--accent2:#31d0aa;--line:#26304f;--maxw:960px}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1020,#0d1428 60%,#0b1020);color:var(--ink);line-height:1.6}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+  header.hero{padding:72px 0 48px;text-align:center;border-bottom:1px solid var(--line)}
+  .badge{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:20px}
+  h1{font-size:clamp(34px,6vw,56px);margin:.1em 0;background:linear-gradient(90deg,#8fb0ff,#31d0aa);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tag{font-size:clamp(17px,2.4vw,21px);color:var(--muted);max-width:660px;margin:16px auto 0}
+  .cta{margin-top:32px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{background:var(--accent);color:#fff;padding:12px 22px;border-radius:10px;font-weight:600;border:0}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:28px;margin:0 0 8px} .lead{color:var(--muted);margin:0 0 28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .card h3{margin:0 0 8px;font-size:18px} .card p{margin:0;color:var(--muted);font-size:15px}
+  .k{color:var(--accent2);font-weight:600}
+  pre{background:#0a0f22;border:1px solid var(--line);border-radius:12px;padding:18px;overflow:auto;font-size:13.5px;color:#cdd7f5}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px}
+  th{color:var(--muted);font-weight:600}
+  footer{padding:40px 0;text-align:center;color:var(--muted);font-size:14px}
+  .note{background:rgba(91,140,255,.08);border:1px solid var(--line);border-radius:12px;padding:16px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">SAP Commerce · Java 21 · Gradle</span>
+    <h1>saga-kit</h1>
+    <p class="tag">Eventing-correctness library for SAP BTP/Kyma commerce meshes — idempotency, ordering, transactional outbox and DLQ as declarative middleware.</p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/AlexTsvetkov/saga-kit">View on GitHub</a>
+      <a class="btn ghost" href="#why">Why it's useful</a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>The problem</h2>
+    <p class="lead">BTP/Kyma extension meshes re-implement retry/idempotency/ordering by convention. The &#x27;return 200 on unrecoverable error, 400 only on retryable, swallow 409 as success&#x27; NATS invariant is tribal knowledge re-coded in every handler; one wrong status = a redelivery storm or a lost event.</p>
+    <div class="grid"><div class="card"><h3>Expertise-gated</h3><p>BTP/Kyma extension meshes re-implement retry/idempotency/ordering by convention. The &#x27;return 200 on unrecoverable error, 400 only on retryab…</p></div><div class="card"><h3>Costly &amp; slow</h3><p>Manual, error-prone work that scales badly across a large estate.</p></div><div class="card"><h3>Under-tooled</h3><p>The ecosystem lacks modern, opinionated backend tooling for this.</p></div></div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="wrap">
+    <h2>The solution &amp; why it's useful</h2>
+    <p class="lead">A library encoding the correct semantics — idempotency keys, dedup windows, transactional **outbox**, ordered delivery groups, DLQ handling, and the &#x27;ack-and-discard vs retry&#x27; decision — as declarative middleware, not copy-paste.</p>
+    <div class="grid"><div class="card"><h3>Correct by default</h3><p>New handlers get idempotency, retry mapping and DLQ handling for free.</p></div><div class="card"><h3>Encode the invariant</h3><p>The 200/400/409 retry semantics are a library primitive, not a comment.</p></div><div class="card"><h3>Structural ordering</h3><p>Ordered delivery and outbox make sequencing a property of the system, not a per-handler hack.</p></div><div class="card"><h3>Broker-pluggable</h3><p>NATS/Kyma Eventing first; the abstraction admits other brokers.</p></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Capabilities</h2>
+    <table><tr><th>Capability</th><th>Description</th></tr><tr><td><span class="k">`@IdempotentHandler`</span></td><td>Dedup by message id within a window.</td></tr><tr><td><span class="k">Retry mapping</span></td><td>Declarative retryable vs ack-and-discard.</td></tr><tr><td><span class="k">Outbox</span></td><td>Transactional publish with a relay.</td></tr><tr><td><span class="k">DLQ policy</span></td><td>Standard dead-letter handling + replay.</td></tr></table>
+    <p class="note">Early scaffold: the core abstraction, a starter implementation and tests are real. This is a foundation to build on.</p>
+  </div>
+</section>
+
+<footer><div class="wrap"><p>saga-kit · MIT License · © 2026 Aliaksandr Tsviatkou<br/>Part of a backend tooling suite for SAP Commerce Cloud.</p></div></footer>
+</body>
+</html>
