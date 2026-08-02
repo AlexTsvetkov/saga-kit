@@ -2,6 +2,8 @@
 
 **Eventing-correctness library for SAP BTP/Kyma commerce meshes — idempotency, ordering, transactional outbox and DLQ as declarative middleware.**
 
+**🌐 Live site: https://alextsvetkov.github.io/saga-kit/**
+
 > ⚠️ **Status:** early scaffold. The core abstraction, a starter implementation and tests are real; this is a foundation to build on, not a finished product. See [Roadmap](#roadmap).
 
 **Stack:** Java 21 + Gradle.
