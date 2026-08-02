@@ -61,6 +61,19 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Conventional commits; generated code s
 
 [MIT](./LICENSE) © 2026 Aliaksandr Tsviatkou
 
+## Honest assessment
+
+> From the v2 self-critical analysis. Scores use **Gap · Value · Moat · Time-to-revenue · Risk** (for Risk, **higher = safer**). Prior art is named deliberately — "no competitor" is almost never true.
+
+**Scores:** Gap 2 · Value 3 · Moat 2 · TTR 3 · Risk 4
+
+- **Prior art / competition.** Transactional outbox is a documented pattern; Axon, Eventuate, Spring messaging and NATS JetStream already cover most of it. The SAP-specific 200/400/409 mapping is ~50 lines.
+- **True differentiator.** Convenience + encoding one tribal invariant. Not a moat.
+- **Kill criterion.** If it doesn't get GitHub traction as free middleware, there's no business beneath it.
+- **Verdict.** **OSS-only.** A credibility/funnel bet, not a company.
+
+See the full landscape, go-to-market and the **IP / conflict-of-interest** discussion in [sap-commerce-general-ideas-for-startup.md](https://github.com/AlexTsvetkov/sap-commerce-ideas-for-projects/blob/main/ideas-for-startup/sap-commerce-general-ideas-for-startup.md).
+
 ---
 
 *Part of a backend tooling suite for SAP Commerce Cloud. See [`commerce-mcp`](https://github.com/AlexTsvetkov/commerce-mcp) for the AI-native flagship.*
