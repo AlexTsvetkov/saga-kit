@@ -69,6 +69,52 @@
   </div>
 </section>
 
+<section>
+  <div class="wrap">
+    <h2>Usage example</h2>
+    <p class="lead">An <span class="k">EventHandlerPipeline</span> encodes the NATS/Kyma contract: fresh=200, duplicate=409 (handler skipped), transient failure=400 until the budget is exhausted then DLQ (200), non-transient=ack-and-discard (200, no DLQ).</p>
+    <pre><code>// Scenario A: fresh (200) then duplicate (409) — handler runs at most once.
+AtomicInteger runs = new AtomicInteger();
+List&lt;Event&gt; dlq = new ArrayList&lt;&gt;();
+EventHandlerPipeline pipeline = new EventHandlerPipeline(
+        event -&gt; runs.incrementAndGet(), dlq::add);
+
+Event a = Event.of("evt-A", "OrderPlaced");
+HandleResult first = pipeline.dispatch(a);
+System.out.println(first.status() + " isOk=" + first.isOk() + " runs=" + runs.get());
+HandleResult dup = pipeline.dispatch(a);              // same id
+System.out.println(dup.status() + " isDuplicate=" + dup.isDuplicate() + " runs=" + runs.get());
+
+// Scenario B: always-transient handler, maxAttempts=3 -&gt; 400,400 then DLQ (200).
+List&lt;Event&gt; dlqB = new ArrayList&lt;&gt;();
+EventHandlerPipeline retrying = new EventHandlerPipeline(
+        event -&gt; { throw new TransientException("downstream 503"); }, 3, dlqB::add);
+Event b = Event.of("evt-B", "InventorySync");
+for (int i = 1; i &lt;= 3; i++) {
+    HandleResult r = retrying.dispatch(b);
+    System.out.println("delivery " + i + ": " + r.status()
+            + " retry=" + r.isRetry() + " dlq=" + r.sentToDlq());
+}
+System.out.println("DLQ size=" + dlqB.size());
+
+// Scenario C: non-transient failure -&gt; ack-and-discard (200, no DLQ).
+List&lt;Event&gt; dlqC = new ArrayList&lt;&gt;();
+EventHandlerPipeline discarding = new EventHandlerPipeline(
+        event -&gt; { throw new IllegalStateException("malformed payload"); }, dlqC::add);
+HandleResult c = discarding.dispatch(Event.of("evt-C", "BadMessage"));
+System.out.println(c.status() + " isOk=" + c.isOk() + " dlq=" + c.sentToDlq()
+        + " dlqSize=" + dlqC.size());</code></pre>
+    <p class="lead" style="margin:18px 0 8px">Output:</p>
+    <pre>200 isOk=true runs=1
+409 isDuplicate=true runs=1
+delivery 1: 400 retry=true dlq=false
+delivery 2: 400 retry=true dlq=false
+delivery 3: 200 retry=false dlq=true
+DLQ size=1
+200 isOk=true dlq=false dlqSize=0</pre>
+  </div>
+</section>
+
 <footer><div class="wrap"><p>saga-kit · MIT License · © 2026 Aliaksandr Tsviatkou<br/>Part of a backend tooling suite for SAP Commerce Cloud.</p></div></footer>
 </body>
 </html>

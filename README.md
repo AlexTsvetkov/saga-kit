@@ -47,6 +47,71 @@ gradle build
 gradle test
 ```
 
+## Usage
+
+An `EventHandlerPipeline` wraps a plain handler with the NATS/Kyma 200/400/409
+acknowledgement contract: fresh events run and ack (200); duplicate ids ack
+without re-running the handler (409); transient failures return 400 (retry) until
+the attempt budget is exhausted, then dead-letter (200, `sentToDlq=true`);
+non-transient failures ack-and-discard (200, no DLQ). The full runnable tutorial
+is at `src/main/java/com/sapcommercetools/saga/examples/Example.java`:
+
+```java
+// Scenario A: fresh (200) then duplicate (409) — handler runs at most once.
+AtomicInteger runs = new AtomicInteger();
+List<Event> dlq = new ArrayList<>();
+EventHandlerPipeline pipeline = new EventHandlerPipeline(
+        event -> runs.incrementAndGet(), dlq::add);
+
+Event a = Event.of("evt-A", "OrderPlaced");
+HandleResult first = pipeline.dispatch(a);
+System.out.println(first.status() + " isOk=" + first.isOk() + " runs=" + runs.get());
+HandleResult dup = pipeline.dispatch(a);              // same id
+System.out.println(dup.status() + " isDuplicate=" + dup.isDuplicate() + " runs=" + runs.get());
+
+// Scenario B: always-transient handler, maxAttempts=3 -> 400,400 then DLQ (200).
+List<Event> dlqB = new ArrayList<>();
+EventHandlerPipeline retrying = new EventHandlerPipeline(
+        event -> { throw new TransientException("downstream 503"); }, 3, dlqB::add);
+Event b = Event.of("evt-B", "InventorySync");
+for (int i = 1; i <= 3; i++) {
+    HandleResult r = retrying.dispatch(b);
+    System.out.println("delivery " + i + ": " + r.status()
+            + " retry=" + r.isRetry() + " dlq=" + r.sentToDlq());
+}
+System.out.println("DLQ size=" + dlqB.size());
+
+// Scenario C: non-transient failure -> ack-and-discard (200, no DLQ).
+List<Event> dlqC = new ArrayList<>();
+EventHandlerPipeline discarding = new EventHandlerPipeline(
+        event -> { throw new IllegalStateException("malformed payload"); }, dlqC::add);
+HandleResult c = discarding.dispatch(Event.of("evt-C", "BadMessage"));
+System.out.println(c.status() + " isOk=" + c.isOk() + " dlq=" + c.sentToDlq()
+        + " dlqSize=" + dlqC.size());
+```
+
+```text
+Output:
+200 isOk=true runs=1
+409 isDuplicate=true runs=1
+delivery 1: 400 retry=true dlq=false
+delivery 2: 400 retry=true dlq=false
+delivery 3: 200 retry=false dlq=true
+DLQ size=1
+200 isOk=true dlq=false dlqSize=0
+```
+
+Gradle is not required. Compile and run the full tutorial with the plain JDK (Java 21):
+
+```bash
+find src/main/java -name '*.java' | xargs javac -d out
+java -cp out com.sapcommercetools.saga.examples.Example
+```
+
+> With Gradle installed you can instead wire a `JavaExec` task
+> (`mainClass = 'com.sapcommercetools.saga.examples.Example'`) and run
+> `gradle run`; the `javac`/`java` path above always works with just the JDK.
+
 ## Roadmap
 
 - [x] Implement the core capability with real logic + unit tests.
